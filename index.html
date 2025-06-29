@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Workout Tracker</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      background: #121212;
+      color: #f1f1f1;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #ffffff;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      margin: 10px 0;
+      font-size: 16px;
+      background: #1e88e5;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    select, input {
+      padding: 5px;
+      margin: 5px 5px 5px 0;
+      background: #333;
+      color: #fff;
+      border: 1px solid #555;
+      border-radius: 4px;
+    }
+    .exercise {
+      background: #1e1e1e;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+    .back-btn {
+      background: #555;
+    }
+    .history-item {
+      background: #1e1e1e;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>My Workout Tracker</h1>
+
+  <div id="home">
+    <button onclick="showWorkout()">Start New Workout</button>
+    <button onclick="showHistory()">View History</button>
+  </div>
+
+  <div id="workout" style="display: none;">
+    <h2>Start New Workout</h2>
+    <label for="day">Select Day:</label>
+    <select id="day" onchange="loadWorkout()">
+      <option value="">-- Select --</option>
+      <option value="Isnin">Isnin</option>
+      <option value="Rabu">Rabu</option>
+      <option value="Jumaat">Jumaat</option>
+    </select>
+
+    <div id="exercises"></div>
+
+    <button onclick="saveWorkout()">Save Workout</button>
+    <button class="back-btn" onclick="goHome()">← Back</button>
+  </div>
+
+  <div id="history" style="display: none;">
+    <h2>Workout History</h2>
+    <div id="historyList"></div>
+    <button class="back-btn" onclick="goHome()">← Back</button>
+  </div>
+
+  <script>
+    const workoutPlan = {
+      "Isnin": [
+        "Incline Barbell Bench Press",
+        "Barbell Row",
+        "Goblet Squat",
+        "Dumbbell Curl",
+        "Overhead Dumbbell Press",
+        "Kettlebell Swing",
+        "Plank",
+        "Side Plank"
+      ],
+      "Rabu": [
+        "Barbell RDL",
+        "Barbell Flat Bench Press",
+        "Close Grip Pulldown",
+        "Dumbbell Lateral Raise",
+        "Step-Up or Reverse Lunge",
+        "Triceps Kickback / OH DB Extension",
+        "Leg Raises",
+        "Hollow Hold"
+      ],
+      "Jumaat": [
+        "Kettlebell Clean & Press",
+        "Push-Up",
+        "Jump Squat / DB Thruster",
+        "Dumbbell Rear Delt Raise",
+        "KB Deadlift High Pull",
+        "Hammer Curl",
+        "Russian Twist",
+        "Plank to Push-up"
+      ]
+    };
+
+    function showWorkout() {
+      document.getElementById("home").style.display = "none";
+      document.getElementById("workout").style.display = "block";
+    }
+
+    function showHistory() {
+      document.getElementById("home").style.display = "none";
+      document.getElementById("history").style.display = "block";
+      loadHistory();
+    }
+
+    function goHome() {
+      document.getElementById("workout").style.display = "none";
+      document.getElementById("history").style.display = "none";
+      document.getElementById("home").style.display = "block";
+    }
+
+    function loadWorkout() {
+      const day = document.getElementById("day").value;
+      const exDiv = document.getElementById("exercises");
+      exDiv.innerHTML = "";
+      if (day && workoutPlan[day]) {
+        workoutPlan[day].forEach((exercise, index) => {
+          exDiv.innerHTML += `
+            <div class="exercise">
+              <strong>${exercise}</strong><br/>
+              Sets: ${buildDropdown(`sets_${index}`, 10)}
+              Reps: ${buildDropdown(`reps_${index}`, 20)}
+              Weight (kg): <input type="number" id="weight_${index}" min="0" value="0" />
+            </div>
+          `;
+        });
+      }
+    }
+
+    function buildDropdown(id, max) {
+      let html = `<select id="${id}">`;
+      html += `<option value="0">-</option>`;
+      for (let i = 1; i <= max; i++) {
+        html += `<option value="${i}">${i}</option>`;
+      }
+      html += `</select>`;
+      return html;
+    }
+
+    function saveWorkout() {
+      const day = document.getElementById("day").value;
+      if (!day) {
+        alert("Please select a day.");
+        return;
+      }
+      const exercises = workoutPlan[day];
+      let workoutData = {
+        date: new Date().toLocaleDateString(),
+        day: day,
+        exercises: []
+      };
+      exercises.forEach((exercise, index) => {
+        const sets = document.getElementById(`sets_${index}`).value || "0";
+        const reps = document.getElementById(`reps_${index}`).value || "0";
+        const weight = document.getElementById(`weight_${index}`).value || "0";
+        workoutData.exercises.push({
+          name: exercise,
+          sets: sets,
+          reps: reps,
+          weight: weight
+        });
+      });
+      let history = JSON.parse(localStorage.getItem("workoutHistory")) || [];
+      history.push(workoutData);
+      localStorage.setItem("workoutHistory", JSON.stringify(history));
+      alert("Workout saved!");
+      goHome();
+    }
+
+    function loadHistory() {
+      const listDiv = document.getElementById("historyList");
+      listDiv.innerHTML = "";
+      let history = JSON.parse(localStorage.getItem("workoutHistory")) || [];
+      if (history.length === 0) {
+        listDiv.innerHTML = "<p>No workout history yet.</p>";
+        return;
+      }
+      history.reverse().forEach(item => {
+        let html = `<div class="history-item">
+          <strong>${item.date} | ${item.day}</strong><br/>`;
+        item.exercises.forEach(ex => {
+          html += `${ex.name} → ${ex.sets} sets, ${ex.reps} reps, ${ex.weight} kg<br/>`;
+        });
+        html += "</div>";
+        listDiv.innerHTML += html;
+      });
+    }
+  </script>
+</body>
+</html>
